@@ -15,7 +15,7 @@ os.environ["GOOGLE_API_KEY"] = "AIzaSyDgAYfuR-WOVWrnHTc6KfGBqRVO7ELFng4"  # Repl
 def extract_text_from_pdf(pdf_file):
     pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
-    for page in pdf_reader.pages:
+    for page in pdf_reader.pages:¸
         text += page.extract_text() or ""
     return text
 
