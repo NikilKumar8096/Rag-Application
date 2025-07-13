@@ -2,12 +2,12 @@
 
 This application is a magical item recommendation assistant built using Generative AI and RAG.
 
-## 🔮 Features
+##  Features
 - Ask for magical items or potions (e.g., "I need a stealth potion")
 - Uses Retrieval-Augmented Generation with a vector DB (FAISS)
 - Streamlit frontend with a magical UI
 
-## 🧪 Setup Instructions
+##  Setup Instructions
 
 1. Clone the repo and place your PDF as `The_Enchanted_Emporium.pdf`.
 2. Build the vector DB:
@@ -20,7 +20,7 @@ python vector_db_builder.py
 
 python3 -m streamlit run Rag.py 
 
-## 📦 Requirements
+## Requirements
 
 Install dependencies with:
 streamlit

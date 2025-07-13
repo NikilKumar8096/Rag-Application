@@ -8,25 +8,23 @@ from langchain.chains import RetrievalQA
 import os
 from google.api_core import exceptions
 
-# Setting up Google API key
-os.environ["GOOGLE_API_KEY"] = "AIzaSyDgAYfuR-WOVWrnHTc6KfGBqRVO7ELFng4"  # Replace with your actual API key
+# --- Set up Google API key ---
+os.environ["GOOGLE_API_KEY"] = "AIzaSyDgAYfuR-WOVWrnHTc6KfGBqRVO7ELFng4"  # Replace with your actual key
 
-# Function to to extract text from PDF
+# --- Function to extract text from PDF ---
 def extract_text_from_pdf(pdf_file):
     pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
-    for page in pdf_reader.pages:¸
+    for page in pdf_reader.pages:
         text += page.extract_text() or ""
     return text
 
-# Streamlit app
-st.title("Magical Potion Shopping Assistant")
-st.write("Upload a PDF with potion details and ask about potions!")
+# --- Streamlit App Title ---
+st.set_page_config(page_title="Potion Chat Assistant", page_icon="🧪")
+st.title("🧪 Magical Potion Shopping Assistant")
+st.write("Upload a PDF with potion details and chat with your magical assistant!")
 
-# File uploader for PDF
-uploaded_file = st.file_uploader("Upload Potion Catalog (PDF)", type="pdf")
-
-# Initialize session state for vector store and QA chain
+# --- Initialize Session State ---
 if 'vector_store' not in st.session_state:
     st.session_state.vector_store = None
 if 'qa_chain' not in st.session_state:
@@ -34,31 +32,25 @@ if 'qa_chain' not in st.session_state:
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-# Process PDF and create vector store
+# --- Upload PDF and Build Vector Store ---
+uploaded_file = st.file_uploader("📜 Upload Potion Catalog (PDF)", type="pdf")
+
 if uploaded_file is not None and st.session_state.vector_store is None:
-    with st.spinner("Processing potion catalog..."):
-        # Extract text from PDF
-        pdf_text = extract_text_from_pdf(uploaded_file)
-        
-        # Split text into chunks
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len
-        )
-        chunks = text_splitter.split_text(pdf_text)
-        
-        # Create embeddings
+    with st.spinner("Processing your magical scroll... 🧙‍♂️"):
         try:
+            # Extract and split text
+            pdf_text = extract_text_from_pdf(uploaded_file)
+            splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            chunks = splitter.split_text(pdf_text)
+
+            # Generate embeddings and vector store
             embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-            
-            # Create FAISS vector store
             vector_store = FAISS.from_texts(chunks, embeddings)
             st.session_state.vector_store = vector_store
-            
-            # Set up LLM and QA chain
+
+            # Create LLM and QA chain
             llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
-            
+
             prompt_template = """You are a magical potion shopping assistant. Use the provided context to give accurate and helpful recommendations about potions. If the user asks about a specific potion or effect, provide details from the context. If no relevant information is found, say so politely. Keep responses concise and magical in tone.
 
 Context: {context}
@@ -67,54 +59,61 @@ User Query: {question}
 
 Answer: """
             prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
-            
-            st.session_state.qa_chain = RetrievalQA.from_chain_type(
+
+            qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
                 chain_type="stuff",
                 retriever=vector_store.as_retriever(search_kwargs={"k": 3}),
                 chain_type_kwargs={"prompt": prompt}
             )
-            st.success("Potion catalog processed! Ask away!")
+            st.session_state.qa_chain = qa_chain
+
+            st.success("Your magical catalog is ready! Ask away. 🧪")
         except exceptions.InvalidArgument as e:
-            st.error(f"Error processing catalog: {str(e)}. Please check your API key and try again.")
+            st.error(f"Invalid API Key or embedding issue: {e}")
         except Exception as e:
-            st.error(f"An unexpected error occurred: {str(e)}. Please try again.")
+            st.error(f"Unexpected error: {e}")
 
-# Chat interface
-st.subheader("Ask About Potions")
-user_query = st.text_input("What potion are you looking for? (e.g., 'potion for strength' or 'uses of moonlight elixir')")
+# --- Chat Interface ---
+if st.session_state.qa_chain:
+    # Initial greeting
+    if len(st.session_state.chat_history) == 0:
+        with st.chat_message("assistant"):
+            st.write("Welcome, magical shopper! 🧙‍♀️ Ask me about potions from your uploaded catalog.")
 
-if user_query and st.session_state.qa_chain:
-    with st.spinner("Consulting the magical archives..."):
-        try:
-            # Get response from QA chain
-            response = st.session_state.qa_chain({"query": user_query})
-            answer = response["result"]
-            
-            # Display response
-            st.write("**Magical Answer:**")
-            st.write(answer)
-            
-            # Update chat history
-            st.session_state.chat_history.append({"query": user_query, "answer": answer})
-            
-            # Display chat history
-            st.subheader("Recent Inquiries")
-            for chat in st.session_state.chat_history[-5:]:  # Show last 5 interactions
-                st.write(f"**You asked:** {chat['query']}")
-                st.write(f"**Response:** {chat['answer']}")
-                st.write("---")
-                
-        except exceptions.InvalidArgument as e:
-            st.error(f"Error generating response: {str(e)}. Please try again.")
-        except Exception as e:
-            st.error(f"An unexpected error occurred: {str(e)}. Please try again.")
-elif user_query and not st.session_state.qa_chain:
-    st.warning("Please upload a potion catalog PDF first!")
+    # Show previous chat history
+    for chat in st.session_state.chat_history:
+        with st.chat_message(chat["role"]):
+            st.write(chat["message"])
 
-# Instructions
-st.sidebar.header("How to Use")
-st.sidebar.write("1. Upload a PDF containing potion details.")
-st.sidebar.write("2. Ask questions about potions or their effects.")
-st.sidebar.write("3. Get magical recommendations based on the catalog!")
-st.sidebar.write("Note: Ensure your Google API key is set in the code and required packages are installed.")
+    # Get user input
+    user_input = st.chat_input("Ask about a potion or its effect...")
+
+    if user_input:
+        # Save and display user message
+        st.session_state.chat_history.append({"role": "user", "message": user_input})
+        with st.chat_message("user"):
+            st.write(user_input)
+
+        # Get assistant response
+        with st.chat_message("assistant"):
+            with st.spinner("Consulting magical scrolls..."):
+                try:
+                    result = st.session_state.qa_chain({"query": user_input})
+                    answer = result["result"]
+                    st.write(answer)
+                    st.session_state.chat_history.append({"role": "assistant", "message": answer})
+                except Exception as e:
+                    st.error(f"Failed to retrieve magical wisdom: {e}")
+else:
+    st.info("Please upload a potion catalog PDF to begin chatting. 🧾")
+
+# --- Sidebar Instructions ---
+st.sidebar.header("🧙 How to Use")
+st.sidebar.markdown("""
+1. Upload a **PDF** containing potion data.
+2. Ask your magical assistant about potion **uses, effects, or recommendations**.
+3. Watch as the assistant responds in a **messaging-style chat**.
+4. PDF is processed only once per session.
+""")
+st.sidebar.caption("Powered by LangChain, Gemini, and FAISS ✨")
