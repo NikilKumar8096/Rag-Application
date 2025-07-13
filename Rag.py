@@ -11,7 +11,7 @@ from google.api_core import exceptions
 # Setting up Google API key
 os.environ["GOOGLE_API_KEY"] = "AIzaSyDgAYfuR-WOVWrnHTc6KfGBqRVO7ELFng4"  # Replace with your actual API key
 
-# Function to extract text from PDF
+# Function to to extract text from PDF
 def extract_text_from_pdf(pdf_file):
     pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
