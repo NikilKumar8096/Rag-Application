@@ -8,7 +8,7 @@ from langchain.chains import RetrievalQA
 import os
 from google.api_core import exceptions
 
-# Set up Google API key
+# Setting up Google API key
 os.environ["GOOGLE_API_KEY"] = "AIzaSyDgAYfuR-WOVWrnHTc6KfGBqRVO7ELFng4"  # Replace with your actual API key
 
 # Function to extract text from PDF
