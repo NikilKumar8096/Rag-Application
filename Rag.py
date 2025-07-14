@@ -8,10 +8,10 @@ from langchain.chains import RetrievalQA
 import os
 from google.api_core import exceptions
 
-# --- Set up Google API key ---
+# Setting up Google API key 
 os.environ["GOOGLE_API_KEY"] = "AIzaSyDgAYfuR-WOVWrnHTc6KfGBqRVO7ELFng4"  # Replace with your actual key
 
-# --- Function to extract text from PDF ---
+#  Function used to extract text from PDF file
 def extract_text_from_pdf(pdf_file):
     pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
@@ -19,12 +19,12 @@ def extract_text_from_pdf(pdf_file):
         text += page.extract_text() or ""
     return text
 
-# --- Streamlit App Title ---
+#  Title for Streamlit App
 st.set_page_config(page_title="Potion Chat Assistant", page_icon="🧪")
 st.title("🧪 Magical Potion Shopping Assistant")
 st.write("Upload a PDF with potion details and chat with your magical assistant!")
 
-# --- Initialize Session State ---
+#  Initializing the Session State 
 if 'vector_store' not in st.session_state:
     st.session_state.vector_store = None
 if 'qa_chain' not in st.session_state:
@@ -32,23 +32,23 @@ if 'qa_chain' not in st.session_state:
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-# --- Upload PDF and Build Vector Store ---
+# Upload PDF and Build Vector Store 
 uploaded_file = st.file_uploader("📜 Upload Potion Catalog (PDF)", type="pdf")
 
 if uploaded_file is not None and st.session_state.vector_store is None:
     with st.spinner("Processing your magical scroll... 🧙‍♂️"):
         try:
-            # Extract and split text
+            # Extracting and splitting the text
             pdf_text = extract_text_from_pdf(uploaded_file)
             splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
             chunks = splitter.split_text(pdf_text)
 
-            # Generate embeddings and vector store
+            # Generate the embeddings and vector store
             embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             vector_store = FAISS.from_texts(chunks, embeddings)
             st.session_state.vector_store = vector_store
 
-            # Create LLM and QA chain
+            # Creating LLM and QA chain
             llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
 
             prompt_template = """You are a magical potion shopping assistant. Use the provided context to give accurate and helpful recommendations about potions. If the user asks about a specific potion or effect, provide details from the context. If no relevant information is found, say so politely. Keep responses concise and magical in tone.
@@ -74,28 +74,28 @@ Answer: """
         except Exception as e:
             st.error(f"Unexpected error: {e}")
 
-# --- Chat Interface ---
+# Chat Interface 
 if st.session_state.qa_chain:
     # Initial greeting
     if len(st.session_state.chat_history) == 0:
         with st.chat_message("assistant"):
             st.write("Welcome, magical shopper! 🧙‍♀️ Ask me about potions from your uploaded catalog.")
 
-    # Show previous chat history
+    # Showing previous chat history
     for chat in st.session_state.chat_history:
         with st.chat_message(chat["role"]):
             st.write(chat["message"])
 
-    # Get user input
+    # Getting the user input
     user_input = st.chat_input("Ask about a potion or its effect...")
 
     if user_input:
-        # Save and display user message
+        # Saving  and displaying user message
         st.session_state.chat_history.append({"role": "user", "message": user_input})
         with st.chat_message("user"):
             st.write(user_input)
 
-        # Get assistant response
+        # Getting assistant response
         with st.chat_message("assistant"):
             with st.spinner("Consulting magical scrolls..."):
                 try:
@@ -108,7 +108,7 @@ if st.session_state.qa_chain:
 else:
     st.info("Please upload a potion catalog PDF to begin chatting. 🧾")
 
-# --- Sidebar Instructions ---
+# Sidebar Instructions 
 st.sidebar.header("🧙 How to Use")
 st.sidebar.markdown("""
 1. Upload a **PDF** containing potion data.
